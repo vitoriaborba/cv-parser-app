@@ -1,0 +1,26 @@
+John Doe
+Software Engineer
+
+Email: john.doe@email.com
+Phone: +1234567890
+Location: New York, NY
+
+EXPERIENCE:
+Senior Software Engineer at TechCorp (2020-Present)
+- Developed web applications using React and Node.js
+- Led a team of 5 developers
+- Implemented CI/CD pipelines
+
+Software Engineer at StartupXYZ (2018-2020)
+- Built mobile applications using React Native
+- Worked with AWS cloud services
+
+EDUCATION:
+Bachelor's in Computer Science
+University of Technology (2014-2018)
+
+SKILLS:
+- JavaScript, React, Node.js
+- Python, Django
+- AWS, Docker, Kubernetes
+- Git, Agile methodologies
