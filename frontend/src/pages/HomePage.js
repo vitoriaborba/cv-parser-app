@@ -118,11 +118,11 @@ function HomePage() {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom align="center">
-        CV Parser Automation
+        CV processing with AI automation
       </Typography>
       
       <Typography variant="subtitle1" gutterBottom align="center" color="text.secondary">
-        Upload your CV file and get a processed Word document instantly
+        Upload the CV file and get a processed Word document instantly
       </Typography>
 
       <Grid container spacing={4}>
