@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "_comment": "Using builds config for monorepo deployment - dashboard build settings intentionally ignored",
   "builds": [
     {
       "src": "frontend/package.json",
