@@ -142,34 +142,26 @@ function HomePage() {
               <Alert 
                 severity="success" 
                 sx={{ mb: 2 }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => window.open(downloadInfo.url, '_blank')}
-                  >
-                    Download Again
-                  </Button>
-                }
               >
                 <Typography variant="h6" component="div">
-                  🎉 CV Processing Complete!
+                  🎉 CV Automation Completed!
                 </Typography>
                 <Typography variant="body2">
-                  {downloadInfo.message} Your document should have opened in a new tab.
+                  {downloadInfo.message} Download your file.
                 </Typography>
               </Alert>
               
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                onClick={() => window.open(downloadInfo.url, '_blank')}
-                sx={{ mt: 2 }}
-                size="large"
-              >
-                Download CV
-              </Button>
+              <Box display="flex" justifyContent="center">
+                <Button
+                  variant="contained"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => window.open(downloadInfo.url, '_blank')}
+                  sx={{ mt: 2 }}
+                  size="large"
+                >
+                  Download CV
+                </Button>
+              </Box>
             </Paper>
           </Grid>
         )}
