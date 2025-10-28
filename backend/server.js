@@ -1,14 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const axios = require('axios');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Basic middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -16,7 +17,7 @@ app.use(express.json());
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  limits: { fileSize: process.env.MAX_FILE_SIZE || 10 * 1024 * 1024 } // 10MB default
 });
 
 // CV upload endpoint
@@ -57,8 +58,18 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
     console.log('📄 Base64 length:', base64Data.length);
 
     // Noxus AI configuration
-    const workflow_id = "f93d38d3-864e-4186-95a8-0a7f54b8fc50";
-    const api_token = "fGoQCiyaa3uBpFnnrN1Uc74K-2WG0jYf";
+    const workflow_id = process.env.NOXUS_WORKFLOW_ID;
+    const api_token = process.env.NOXUS_API_TOKEN;
+    
+    if (!workflow_id || !api_token) {
+      console.error('❌ Missing Noxus AI configuration');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Server configuration error. Please contact support.',
+        errorType: 'CONFIG_ERROR'
+      });
+    }
+    
     const endpoint = `https://app.noxus.ai/api/backend/v1/workflows/${workflow_id}/runs`;
 
     const headers = {
