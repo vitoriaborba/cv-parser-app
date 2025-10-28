@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds
+  timeout: 120000, // 2 minutes for Noxus AI processing
 });
 
 // Request interceptor
@@ -31,74 +31,31 @@ api.interceptors.response.use(
 );
 
 export const cvService = {
-  // Upload and parse CV
+  // Upload CV to Noxus AI and get download URL for processed document
   uploadCV: async (file) => {
     const formData = new FormData();
     formData.append('cv', file);
 
-    const response = await api.post('/cv/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      responseType: 'blob', // Handle binary file response
-    });
-    
-    // Check if response is a file (binary) or JSON
-    if (response.headers['content-type']?.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
-      // It's a Word document - create download
-      const blob = response.data;
-      const filename = response.headers['content-disposition']?.match(/filename="(.+)"/)?.[1] || 'curriculum.docx';
+    try {
+      const response = await api.post('/cv/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        // Remove responseType: 'blob' - now expecting JSON response
+        timeout: 120000, // 2 minutes for Noxus AI processing
+      });
       
-      // Auto-download the file
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Backend now returns JSON with download URL
+      return response.data;
       
-      return {
-        success: true,
-        message: 'CV processed and document generated successfully!',
-        filename: filename,
-        downloadCompleted: true
-      };
-    } else {
-      // It's a JSON response - convert blob to text and parse
-      const text = await response.data.text();
-      return JSON.parse(text);
+    } catch (error) {
+      // Handle errors
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error(error.message || 'Failed to process CV');
     }
-  },
-
-  // Generate filled template
-  generateTemplate: async (templateName, cvData) => {
-    const response = await api.post('/cv/generate-template', {
-      templateName,
-      cvData,
-    });
-    return response.data;
-  },
-
-  // Get available templates
-  getTemplates: async () => {
-    const response = await api.get('/cv/templates');
-    return response.data;
-  },
-
-  // Download generated file
-  downloadFile: async (filename) => {
-    const response = await api.get(`/cv/download/${filename}`, {
-      responseType: 'blob',
-    });
-    return response.data;
-  },
-
-  // Health check
-  healthCheck: async () => {
-    const response = await api.get('/health');
-    return response.data;
   },
 };
 

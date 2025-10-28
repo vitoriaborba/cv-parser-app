@@ -4,19 +4,43 @@ import {
   Box,
   Typography,
   Button,
-  CircularProgress,
+  LinearProgress,
   Alert,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material';
+import { toast } from 'react-toastify';
 
-function FileUpload({ onFileUpload, loading }) {
+function FileUpload({ onFileUpload, loading, progress }) {
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     if (rejectedFiles.length > 0) {
-      const errors = rejectedFiles[0].errors.map(error => error.message).join(', ');
+      const rejectedFile = rejectedFiles[0];
+      const errors = rejectedFile.errors.map(error => error.message);
       console.error('File rejected:', errors);
+      
+      // Show specific error messages for different rejection reasons
+      if (errors.some(error => error.includes('type'))) {
+        toast.error('❌ Invalid File Format\nOnly PDF, DOC, and DOCX files are supported.', {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else if (errors.some(error => error.includes('size'))) {
+        toast.error('📏 File Too Large\nMaximum file size is 10MB.', {
+          position: "top-center",
+          autoClose: 5000,
+        });
+      } else {
+        toast.error('❌ File Upload Error\n' + errors.join(', '), {
+          position: "top-center",
+          autoClose: 5000,
+        });
+      }
       return;
     }
 
@@ -45,11 +69,11 @@ function FileUpload({ onFileUpload, loading }) {
   return (
     <Box>
       <Typography variant="h5" component="h2" gutterBottom>
-        Step 1: Upload Your CV
+        Upload Your CV
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        Supported formats: PDF, DOC, DOCX (max 10MB)
+        Supported formats: PDF, DOC, DOCX (max 10MB) • Processed by Noxus AI
       </Alert>
 
       <Box
@@ -73,14 +97,35 @@ function FileUpload({ onFileUpload, loading }) {
         <input {...getInputProps()} />
         
         {loading ? (
-          <Box>
-            <CircularProgress size={48} sx={{ mb: 2 }} />
-            <Typography variant="h6">
-              Processing your CV...
+          <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Processing your CV with Noxus AI...
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Please wait while we parse your document
+            
+            <Box sx={{ mb: 2 }}>
+              <LinearProgress 
+                variant={progress ? "determinate" : "indeterminate"} 
+                value={progress || 0} 
+                sx={{ 
+                  height: 8, 
+                  borderRadius: 4,
+                  backgroundColor: 'grey.200'
+                }}
+              />
+            </Box>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {progress ? `${Math.round(progress)}% complete` : 'Please wait while we generate your document'}
             </Typography>
+            
+            {progress && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {progress < 20 && '🚀 Starting workflow...'}
+                {progress >= 20 && progress < 60 && '⚙️ Processing document...'}
+                {progress >= 60 && progress < 90 && '🔍 Analyzing content...'}
+                {progress >= 90 && '✨ Finalizing document...'}
+              </Typography>
+            )}
           </Box>
         ) : (
           <Box>
@@ -115,13 +160,6 @@ function FileUpload({ onFileUpload, loading }) {
             )}
           </Box>
         )}
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          💡 <strong>Tip:</strong> For best results, ensure your CV has clear sections for 
-          personal information, experience, education, and skills.
-        </Typography>
       </Box>
     </Box>
   );

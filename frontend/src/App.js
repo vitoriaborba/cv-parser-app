@@ -1,26 +1,38 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
 import { Container, AppBar, Toolbar, Typography, Box } from '@mui/material';
-import DescriptionIcon from '@mui/icons-material/Description';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import HomePage from './pages/HomePage';
+import Logo from './components/Logo';
 
 function App() {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
+      <AppBar position="static" sx={{ bgcolor: 'black' }}>
         <Toolbar>
-          <DescriptionIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            CV Parser Automation
-          </Typography>
+          <Logo />
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-        </Routes>
+        <HomePage />
       </Container>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{
+          whiteSpace: 'pre-line' // This allows line breaks in toast messages
+        }}
+      />
     </Box>
   );
 }

@@ -4,92 +4,115 @@ import {
   Typography,
   Grid,
   Box,
-  Stepper,
-  Step,
-  StepLabel,
+  Alert,
+  Button,
 } from '@mui/material';
+import { Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import FileUpload from '../components/FileUpload';
-import CVPreview from '../components/CVPreview';
-import TemplateSelector from '../components/TemplateSelector';
 import { cvService } from '../services/api';
 
-const steps = ['Upload CV', 'Review Parsed Data', 'Generate Template'];
-
 function HomePage() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [cvData, setCvData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploadedFileName, setUploadedFileName] = useState('');
-  const [downloadCompleted, setDownloadCompleted] = useState(false);
+  const [downloadInfo, setDownloadInfo] = useState(null);
+  const [progress, setProgress] = useState(0);
 
   const handleFileUpload = async (file) => {
     setLoading(true);
+    setDownloadInfo(null); // Clear any previous download info when starting new upload
+    setProgress(0);
+    
     try {
       console.log('📁 Uploading file:', file.name);
-      const result = await cvService.uploadCV(file);
       
-      if (result.success) {
-        if (result.downloadCompleted) {
-          // File was automatically downloaded
-          toast.success('CV processed and document generated! Download completed.');
-          setUploadedFileName(result.filename);
-          setDownloadCompleted(true);
-          setActiveStep(2); // Go directly to completion step
-        } else {
-          // Standard JSON response - go to review
-          setCvData(result.data);
-          setUploadedFileName(result.filename);
-          toast.success('CV parsed successfully!');
-          setActiveStep(1); // Go to review step
-        }
+      // Start progress simulation
+      setProgress(10); // File uploaded
+      
+      setTimeout(() => setProgress(25), 1000);   // Workflow starting
+      setTimeout(() => setProgress(40), 3000);   // Processing
+      setTimeout(() => setProgress(60), 8000);   // Analyzing  
+      setTimeout(() => setProgress(80), 15000);  // Almost done
+      setTimeout(() => setProgress(95), 20000);  // Finalizing
+      
+      const result = await cvService.uploadCV(file);
+      setProgress(100); // Complete when done
+      
+      if (result.success && result.downloadUrl) {
+        // Store download info to show in UI
+        setDownloadInfo({
+          url: result.downloadUrl,
+          fileName: result.fileName,
+          message: result.message
+        });
+        
+        // Also open download URL in new tab (since it works in browser)
+        window.open(result.downloadUrl, '_blank');
+        
+        console.log('📄 Download URL opened:', result.downloadUrl);
+        console.log('📄 File name:', result.fileName);
       } else {
-        throw new Error(result.message || 'Failed to parse CV');
+        throw new Error(result.message || 'Failed to process CV');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Error uploading file');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateTemplate = async (templateName) => {
-    setLoading(true);
-    try {
-      console.log('📄 Generating template:', templateName);
-      const result = await cvService.generateTemplate(templateName, cvData);
       
-      if (result.success) {
-        setActiveStep(2);
-        toast.success('Template generated successfully!');
+      // Handle specific error types with appropriate messages
+      if (error.response?.data) {
+        const { errorType, message } = error.response.data;
         
-        // Auto-download the file
-        const blob = await cvService.downloadFile(result.filename);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        switch (errorType) {
+          case 'INVALID_FORMAT':
+            toast.error('❌ Invalid File Format\n' + message, {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+            break;
+            
+          case 'NOXUS_API_ERROR':
+          case 'NOXUS_PROCESSING_FAILED':
+          case 'NOXUS_TIMEOUT':
+          case 'NOXUS_NO_OUTPUT':
+          case 'NOXUS_INVALID_RESPONSE':
+            toast.error('🔧 Noxus AI Service Error\n' + message, {
+              position: "top-center",
+              autoClose: 7000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+            break;
+            
+          case 'NO_FILE':
+            toast.warning('📁 No File Selected\n' + message, {
+              position: "top-center",
+              autoClose: 4000,
+            });
+            break;
+            
+          default:
+            toast.error('⚠️ Processing Error\n' + (message || 'An unexpected error occurred'), {
+              position: "top-center",
+              autoClose: 6000,
+            });
+        }
       } else {
-        throw new Error(result.message || 'Failed to generate template');
+        // Network or other errors
+        toast.error('🌐 Network Error\nPlease check your connection and try again', {
+          position: "top-center",
+          autoClose: 5000,
+        });
       }
-    } catch (error) {
-      console.error('Template generation error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Error generating template');
+      
+      setDownloadInfo(null); // Clear any previous download info
     } finally {
       setLoading(false);
+      setProgress(0); // Reset progress
     }
-  };
-
-  const handleReset = () => {
-    setActiveStep(0);
-    setCvData(null);
-    setUploadedFileName('');
-    setDownloadCompleted(false);
   };
 
   return (
@@ -99,49 +122,57 @@ function HomePage() {
       </Typography>
       
       <Typography variant="subtitle1" gutterBottom align="center" color="text.secondary">
-        Upload your CV, review parsed data, and generate filled templates automatically
+        Upload your CV file and get a processed Word document instantly
       </Typography>
-
-      <Box sx={{ width: '100%', mt: 4, mb: 4 }}>
-        <Stepper activeStep={activeStep} alternativeLabel>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-      </Box>
 
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 3 }}>
-            {activeStep === 0 && (
-              <FileUpload 
-                onFileUpload={handleFileUpload} 
-                loading={loading}
-              />
-            )}
-            
-            {activeStep === 1 && cvData && (
-              <CVPreview 
-                cvData={cvData} 
-                fileName={uploadedFileName}
-                onNext={() => setActiveStep(2)}
-                onBack={() => setActiveStep(0)}
-              />
-            )}
-            
-            {activeStep === 2 && (
-              <TemplateSelector 
-                cvData={cvData}
-                onGenerateTemplate={handleGenerateTemplate}
-                onReset={handleReset}
-                loading={loading}
-                downloadCompleted={downloadCompleted}
-              />
-            )}
+            <FileUpload 
+              onFileUpload={handleFileUpload} 
+              loading={loading}
+              progress={progress}
+            />
           </Paper>
         </Grid>
+        
+        {downloadInfo && (
+          <Grid item xs={12}>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Alert 
+                severity="success" 
+                sx={{ mb: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => window.open(downloadInfo.url, '_blank')}
+                  >
+                    Download Again
+                  </Button>
+                }
+              >
+                <Typography variant="h6" component="div">
+                  🎉 CV Processing Complete!
+                </Typography>
+                <Typography variant="body2">
+                  {downloadInfo.message} Your document should have opened in a new tab.
+                </Typography>
+              </Alert>
+              
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={() => window.open(downloadInfo.url, '_blank')}
+                sx={{ mt: 2 }}
+                size="large"
+              >
+                Download CV
+              </Button>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );
