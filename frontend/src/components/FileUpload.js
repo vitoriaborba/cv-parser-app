@@ -68,10 +68,6 @@ function FileUpload({ onFileUpload, loading, progress }) {
 
   return (
     <Box>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Upload Your CV
-      </Typography>
-
       <Alert severity="info" sx={{ mb: 3 }}>
         Supported formats: PDF, DOC, DOCX (max 10MB) • Processed by Noxus AI
       </Alert>
@@ -148,7 +144,7 @@ function FileUpload({ onFileUpload, loading, progress }) {
                   or
                 </Typography>
                 <Button variant="contained" component="span">
-                  Browse Files
+                  Select File
                 </Button>
               </>
             )}

@@ -118,11 +118,11 @@ function HomePage() {
     return (
         <Box>
             <Typography variant="h4" component="h1" gutterBottom align="center">
-                CV processing with AI automation
+                Candidate Data Processor
             </Typography>
 
             <Typography variant="subtitle1" gutterBottom align="center" color="text.secondary">
-                Upload the CV file and get a processed Word document instantly
+                Upload any supported CV file to instantly receive a clean, structured Word profile.
             </Typography>
 
             <Grid container spacing={4}>
@@ -144,10 +144,10 @@ function HomePage() {
                                 sx={{ mb: 2 }}
                             >
                                 <Typography variant="h6" component="div">
-                                    🎉 CV Automation Completed!
+                                    CV Processing Complete! 🎉
                                 </Typography>
                                 <Typography variant="body2">
-                                    {downloadInfo.message} Download your file.
+                                    The candidate data has been successfully mapped to the AW Template.
                                 </Typography>
                             </Alert>
 

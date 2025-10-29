@@ -96,7 +96,7 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
 
     const body = {
       "input": {
-        "Input 1": base64Data
+        "CV": base64Data
       }
     };
 
