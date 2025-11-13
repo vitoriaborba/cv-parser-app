@@ -24,8 +24,23 @@ api.interceptors.response.use(
     console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`);
     return response;
   },
-  (error) => {
-    console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error.response?.data);
+  async (error) => {
+    const errorInfo = `${error.config?.method?.toUpperCase()} ${error.config?.url}`;
+    
+    // If response data is a Blob, try to parse it
+    if (error.response?.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        const errorData = JSON.parse(text);
+        console.error(`❌ API Error: ${errorInfo}`, errorData);
+        console.error('❌ Error Stack:', errorData.stack);
+      } catch (parseError) {
+        console.error(`❌ API Error: ${errorInfo}`, error.response?.data);
+      }
+    } else {
+      console.error(`❌ API Error: ${errorInfo}`, error.response?.data);
+    }
+    
     return Promise.reject(error);
   }
 );
