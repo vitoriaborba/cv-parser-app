@@ -77,9 +77,11 @@ export const cvService = {
         try {
           const text = await error.response.data.text();
           const errorData = JSON.parse(text);
-          throw error; // Keep original error with response data
+          console.error('❌ Server Error Details:', errorData);
+          console.error('❌ Full Stack:', errorData.stack);
+          throw new Error(errorData.message || errorData.details || 'Failed to process CV');
         } catch (parseError) {
-          // Not JSON, use generic error
+          console.error('❌ Failed to parse error blob:', parseError);
           throw new Error('Failed to process CV');
         }
       }
