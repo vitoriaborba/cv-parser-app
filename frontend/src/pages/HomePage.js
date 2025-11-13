@@ -37,19 +37,29 @@ function HomePage() {
             const result = await cvService.uploadCV(file);
             setProgress(100); // Complete when done
 
-            if (result.success && result.downloadUrl) {
+            if (result.success && result.url) {
                 // Store download info to show in UI
                 setDownloadInfo({
-                    url: result.downloadUrl,
+                    url: result.url,
                     fileName: result.fileName,
-                    message: result.message
+                    message: result.message,
+                    blob: result.blob
                 });
 
-                // Also open download URL in new tab (since it works in browser)
-                window.open(result.downloadUrl, '_blank');
+                // Trigger automatic download
+                const link = document.createElement('a');
+                link.href = result.url;
+                link.download = result.fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-                console.log('📄 Download URL opened:', result.downloadUrl);
-                console.log('📄 File name:', result.fileName);
+                toast.success('✅ CV Processed Successfully!\n📥 Download started automatically.', {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
+
+                console.log('📄 Download triggered:', result.fileName);
             } else {
                 throw new Error(result.message || 'Failed to process CV');
             }
@@ -155,7 +165,14 @@ function HomePage() {
                                 <Button
                                     variant="contained"
                                     startIcon={<DownloadIcon />}
-                                    onClick={() => window.open(downloadInfo.url, '_blank')}
+                                    onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = downloadInfo.url;
+                                        link.download = downloadInfo.fileName;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
                                     sx={{ mt: 2 }}
                                     size="large"
                                 >

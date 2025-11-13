@@ -31,7 +31,7 @@ api.interceptors.response.use(
 );
 
 export const cvService = {
-  // Upload CV to Noxus AI and get download URL for processed document
+  // Upload CV to Noxus AI and get processed Word document
   uploadCV: async (file) => {
     const formData = new FormData();
     formData.append('cv', file);
@@ -41,15 +41,49 @@ export const cvService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        // Remove responseType: 'blob' - now expecting JSON response
-        timeout: 120000, // 2 minutes for Noxus AI processing
+        responseType: 'blob', // Expecting binary file (Word document)
+        timeout: 120000, // 2 minutes for Noxus AI + JSReport processing
       });
       
-      // Backend now returns JSON with download URL
-      return response.data;
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = 'CV_AdvanceWorks.docx';
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1];
+        }
+      }
+      
+      // Create blob URL for download
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      
+      return {
+        success: true,
+        blob: blob,
+        url: url,
+        fileName: fileName,
+        message: 'CV processed successfully!'
+      };
       
     } catch (error) {
-      // Handle errors
+      // Handle errors - check if it's a JSON error response
+      if (error.response?.data instanceof Blob) {
+        // Try to parse error from blob
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          throw error; // Keep original error with response data
+        } catch (parseError) {
+          // Not JSON, use generic error
+          throw new Error('Failed to process CV');
+        }
+      }
+      
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
