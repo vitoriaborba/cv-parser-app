@@ -8,6 +8,8 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const jsreport = require('jsreport-core')();
+let jsreportInitialized = false;
+let jsreportInitializing = false;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -103,15 +105,29 @@ jsreport.use(require('jsreport-docx')({
 async function generateCvAsync(data) {
   try {
     // Ensure JSReport is initialized (important for serverless)
-    if (!jsreport.initFinished) {
+    if (!jsreportInitialized && !jsreportInitializing) {
+      jsreportInitializing = true;
       console.log('⚙️ Initializing JSReport (lazy init)...');
       try {
         await jsreport.init();
+        jsreportInitialized = true;
         console.log('✅ JSReport initialized successfully');
       } catch (initError) {
+        jsreportInitializing = false;
         console.error('❌ JSReport initialization failed:', initError);
         console.error('❌ Init error stack:', initError.stack);
         throw new Error(`JSReport initialization failed: ${initError.message}`);
+      } finally {
+        jsreportInitializing = false;
+      }
+    } else if (jsreportInitializing) {
+      // Wait for initialization to complete
+      console.log('⏳ Waiting for JSReport initialization...');
+      while (jsreportInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      if (!jsreportInitialized) {
+        throw new Error('JSReport initialization failed');
       }
     }
     
