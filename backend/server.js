@@ -14,6 +14,9 @@ let jsreportInitializing = false;
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for Vercel
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -450,10 +453,12 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
         
         // Build filename using extracted values: AW_CV_FullName_cvReference.docx
         const fileName = `AW CV ${fullName} ${cvReference}.docx`;
+        // Encode filename to handle non-ASCII characters (required by Vercel)
+        const encodedFileName = encodeURIComponent(fileName);
         
         res.set({
           'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Disposition': `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
           'Content-Length': wordBuffer.length
         });
         
@@ -567,9 +572,10 @@ app.post('/api/curriculum/generate_file', async (req, res) => {
     }
     
     const fileName = `AW CV ${cvReference}.docx`;
+    const encodedFileName = encodeURIComponent(fileName);
     const contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`);
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', fileBytes.length);
     
