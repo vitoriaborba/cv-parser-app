@@ -105,30 +105,36 @@ jsreport.use(require('jsreport-docx')({
 async function generateCvAsync(data) {
   try {
     // Ensure JSReport is initialized (important for serverless)
-    if (!jsreportInitialized && !jsreportInitializing) {
-      jsreportInitializing = true;
+    // Check if jsreport has already been initialized by checking internal state
+    if (jsreport._initialized !== true) {
       console.log('⚙️ Initializing JSReport (lazy init)...');
+      console.log('⚙️ JSReport state:', {
+        initialized: jsreportInitialized,
+        initializing: jsreportInitializing,
+        _initialized: jsreport._initialized
+      });
+      
       try {
         await jsreport.init();
         jsreportInitialized = true;
+        jsreport._initialized = true;
         console.log('✅ JSReport initialized successfully');
       } catch (initError) {
-        jsreportInitializing = false;
         console.error('❌ JSReport initialization failed:', initError);
         console.error('❌ Init error stack:', initError.stack);
-        throw new Error(`JSReport initialization failed: ${initError.message}`);
-      } finally {
-        jsreportInitializing = false;
+        console.error('❌ Init error name:', initError.name);
+        
+        // If it's already initialized error, mark as initialized and continue
+        if (initError.message && initError.message.includes('already initialized')) {
+          console.log('⚠️ JSReport was already initialized, continuing...');
+          jsreportInitialized = true;
+          jsreport._initialized = true;
+        } else {
+          throw new Error(`JSReport initialization failed: ${initError.message}`);
+        }
       }
-    } else if (jsreportInitializing) {
-      // Wait for initialization to complete
-      console.log('⏳ Waiting for JSReport initialization...');
-      while (jsreportInitializing) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      if (!jsreportInitialized) {
-        throw new Error('JSReport initialization failed');
-      }
+    } else {
+      console.log('✅ JSReport already initialized (reusing instance)');
     }
     
     // Read the DOCX template
