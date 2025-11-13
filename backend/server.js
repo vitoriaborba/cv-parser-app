@@ -102,6 +102,19 @@ jsreport.use(require('jsreport-docx')({
 // Function to generate CV using JSReport
 async function generateCvAsync(data) {
   try {
+    // Ensure JSReport is initialized (important for serverless)
+    if (!jsreport.initFinished) {
+      console.log('⚙️ Initializing JSReport (lazy init)...');
+      try {
+        await jsreport.init();
+        console.log('✅ JSReport initialized successfully');
+      } catch (initError) {
+        console.error('❌ JSReport initialization failed:', initError);
+        console.error('❌ Init error stack:', initError.stack);
+        throw new Error(`JSReport initialization failed: ${initError.message}`);
+      }
+    }
+    
     // Read the DOCX template
     const templatePath = path.join(__dirname, 'templates', 'AW_cv_template.docx');
     
@@ -427,11 +440,14 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
         
       } catch (jsreportError) {
         console.error('❌ JSReport generation error:', jsreportError);
+        console.error('❌ JSReport error stack:', jsreportError.stack);
+        console.error('❌ JSReport error name:', jsreportError.name);
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to generate Word document from CV data.',
           errorType: 'JSREPORT_ERROR',
-          details: jsreportError.message
+          details: jsreportError.message,
+          stack: jsreportError.stack
         });
       }
       
