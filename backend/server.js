@@ -164,6 +164,11 @@ async function generateCvAsync(data) {
 // CV upload endpoint
 app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
   try {
+    console.log('🔵 Upload request received');
+    console.log('🔵 Environment:', process.env.NODE_ENV);
+    console.log('🔵 Has NOXUS_WORKFLOW_ID:', !!process.env.NOXUS_WORKFLOW_ID);
+    console.log('🔵 Has NOXUS_API_TOKEN:', !!process.env.NOXUS_API_TOKEN);
+    
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
@@ -549,6 +554,46 @@ app.get('/api/health', (req, res) => {
     service: 'CV Parser API with JSReport',
     jsreport: 'enabled'
   });
+});
+
+// Debug endpoint for Vercel
+app.get('/api/debug', async (req, res) => {
+  try {
+    const templatePath = path.join(__dirname, 'templates', 'AW_cv_template.docx');
+    
+    const debug = {
+      nodeEnv: process.env.NODE_ENV,
+      hasNoxusWorkflow: !!process.env.NOXUS_WORKFLOW_ID,
+      hasNoxusToken: !!process.env.NOXUS_API_TOKEN,
+      cwd: process.cwd(),
+      __dirname: __dirname,
+      templatePath: templatePath,
+    };
+    
+    // Check if template exists
+    try {
+      fs.accessSync(templatePath);
+      debug.templateExists = true;
+      const stats = fs.statSync(templatePath);
+      debug.templateSize = stats.size;
+    } catch (err) {
+      debug.templateExists = false;
+      debug.templateError = err.message;
+    }
+    
+    // Try to list templates directory
+    try {
+      const templatesDir = path.join(__dirname, 'templates');
+      const files = fs.readdirSync(templatesDir);
+      debug.templatesDirFiles = files;
+    } catch (err) {
+      debug.templatesDirError = err.message;
+    }
+    
+    res.json(debug);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
 });
 
 // Start server
