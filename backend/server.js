@@ -401,29 +401,19 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
         console.log('🔍 nodeOutput.text type:', typeof nodeOutput.text);
         console.log('🔍 nodeOutput.text sample:', nodeOutput.text.substring(0, 200));
         
-        // Parse the JSON string from Noxus (might be double-encoded)
+        // Parse the JSON from Noxus
         let parsedData;
         try {
-          // First check if it's already an object (Noxus might return parsed JSON now)
+          // Check if it's already an object
           if (typeof nodeOutput.text === 'object') {
-            console.log('🔍 nodeOutput.text is already an object, using directly');
             parsedData = nodeOutput.text;
           } else {
-            // It's a string, try to parse it
-            let jsonString = nodeOutput.text.trim();
+            // Parse as string
+            parsedData = JSON.parse(nodeOutput.text);
             
-            // Try to clean common JSON issues
-            // Remove trailing commas before closing brackets/braces
-            jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-            
-            console.log('🔍 Attempting to parse JSON string...');
-            parsedData = JSON.parse(jsonString);
-            
-            // Check if it's still a string (double-encoded JSON)
+            // Check for double-encoded JSON
             if (typeof parsedData === 'string') {
-              console.log('🔍 Detected double-encoded JSON, parsing again...');
-              jsonString = parsedData.trim().replace(/,(\s*[}\]])/g, '$1');
-              parsedData = JSON.parse(jsonString);
+              parsedData = JSON.parse(parsedData);
             }
           }
           
@@ -431,11 +421,21 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
           console.log('📋 Has $metadata:', !!parsedData.$metadata);
         } catch (parseError) {
           console.error('❌ Failed to parse Noxus JSON:', parseError);
-          console.error('❌ JSON sample (first 500 chars):', nodeOutput.text.substring(0, 500));
-          console.error('❌ JSON sample (last 200 chars):', nodeOutput.text.substring(nodeOutput.text.length - 200));
+          
+          // Log context around error position
+          if (parseError.message.includes('position')) {
+            const match = parseError.message.match(/position (\d+)/);
+            if (match) {
+              const pos = parseInt(match[1]);
+              const start = Math.max(0, pos - 100);
+              const end = Math.min(nodeOutput.text.length, pos + 100);
+              console.error('❌ Problem area:', nodeOutput.text.substring(start, end));
+            }
+          }
+          
           return res.status(500).json({ 
             success: false, 
-            message: 'Failed to parse CV data from Noxus.',
+            message: 'Invalid JSON from Noxus AI. Please contact support.',
             errorType: 'NOXUS_PARSE_ERROR',
             details: parseError.message
           });
