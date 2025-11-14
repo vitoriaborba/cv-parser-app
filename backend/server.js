@@ -404,18 +404,35 @@ app.post('/api/cv/upload', upload.single('cv'), async (req, res) => {
         // Parse the JSON string from Noxus (might be double-encoded)
         let parsedData;
         try {
-          parsedData = JSON.parse(nodeOutput.text);
-          
-          // Check if it's still a string (double-encoded JSON)
-          if (typeof parsedData === 'string') {
-            console.log('🔍 Detected double-encoded JSON, parsing again...');
-            parsedData = JSON.parse(parsedData);
+          // First check if it's already an object (Noxus might return parsed JSON now)
+          if (typeof nodeOutput.text === 'object') {
+            console.log('🔍 nodeOutput.text is already an object, using directly');
+            parsedData = nodeOutput.text;
+          } else {
+            // It's a string, try to parse it
+            let jsonString = nodeOutput.text.trim();
+            
+            // Try to clean common JSON issues
+            // Remove trailing commas before closing brackets/braces
+            jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+            
+            console.log('🔍 Attempting to parse JSON string...');
+            parsedData = JSON.parse(jsonString);
+            
+            // Check if it's still a string (double-encoded JSON)
+            if (typeof parsedData === 'string') {
+              console.log('🔍 Detected double-encoded JSON, parsing again...');
+              jsonString = parsedData.trim().replace(/,(\s*[}\]])/g, '$1');
+              parsedData = JSON.parse(jsonString);
+            }
           }
           
           console.log('✅ Successfully parsed JSON from Noxus');
           console.log('📋 Has $metadata:', !!parsedData.$metadata);
         } catch (parseError) {
           console.error('❌ Failed to parse Noxus JSON:', parseError);
+          console.error('❌ JSON sample (first 500 chars):', nodeOutput.text.substring(0, 500));
+          console.error('❌ JSON sample (last 200 chars):', nodeOutput.text.substring(nodeOutput.text.length - 200));
           return res.status(500).json({ 
             success: false, 
             message: 'Failed to parse CV data from Noxus.',
